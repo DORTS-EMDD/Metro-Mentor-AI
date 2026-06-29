@@ -117,8 +117,10 @@ class SimpleDocStore:
 #  Session State 初始化
 # ══════════════════════════════════════════════════════════
 def _init_state():
+    # 優先從 Streamlit Secrets 讀取 API Key（Settings → Secrets 設定 GOOGLE_API_KEY）
+    _secret_key = st.secrets.get("GOOGLE_API_KEY", "")
     defaults = {
-        "api_key": "",
+        "api_key": _secret_key,
         "selected_model": "gemini-3.1-flash-lite",
         "knowledge_store": SimpleDocStore(),   # 技術文件庫
         "lesson_store":    SimpleDocStore(),   # 失敗案例庫
@@ -306,21 +308,25 @@ with st.sidebar:
     st.markdown("**捷運機電智慧傳承顧問系統**")
     st.divider()
 
-    # API Key
-    api_key = st.text_input(
-        "🔑 Google API Key",
-        type="password",
-        value=st.session_state.api_key,
-        placeholder="AIza...",
-        help="輸入您的 Google Gemini API 金鑰（可至 Google AI Studio 取得）",
-    )
-    if api_key:
-        st.session_state.api_key = api_key
-
-    if st.session_state.api_key:
-        st.success("✅ API Key 已設定")
+    # API Key — 若已透過 Streamlit Secrets 設定則自動套用，不顯示輸入框
+    _from_secrets = bool(st.secrets.get("GOOGLE_API_KEY", ""))
+    if _from_secrets:
+        st.success("✅ API Key 已透過 Secrets 自動載入")
     else:
-        st.warning("⚠️ 請輸入 API Key")
+        api_key = st.text_input(
+            "🔑 Google API Key",
+            type="password",
+            value=st.session_state.api_key,
+            placeholder="AIza...",
+            help="輸入您的 Google Gemini API 金鑰（可至 Google AI Studio 取得）",
+        )
+        if api_key:
+            st.session_state.api_key = api_key
+
+        if st.session_state.api_key:
+            st.success("✅ API Key 已設定")
+        else:
+            st.warning("⚠️ 請輸入 API Key")
 
     st.divider()
 
@@ -368,8 +374,8 @@ if page == "🏠 系統總覽":
     st.title("🚇 Metro-Mentor AI")
     st.markdown("### 捷運機電系統設計智慧傳承與介面審查 AI 顧問系統")
     st.info(
-        "**使用步驟：** ① 左側輸入 Anthropic API Key　② 至「📚 文件上傳」上傳技術文件　"
-        "③ 使用各功能模組開始提問或生成審查清單"
+        "**使用步驟：** ① 在 Streamlit Secrets 設定 `GOOGLE_API_KEY`（或於左側手動輸入）　"
+        "② 至「📚 文件上傳」上傳技術文件　③ 使用各功能模組開始提問或生成審查清單"
     )
     st.divider()
 
@@ -540,7 +546,7 @@ elif page == "🔍 A. 智慧查詢":
 
     ks = st.session_state.knowledge_store
     if not st.session_state.api_key:
-        st.warning("⚠️ 請先在左側輸入 Google API Key")
+        st.warning("⚠️ 請先設定 Google API Key（Secrets 或左側輸入框）")
         st.stop()
 
     if ks.count() == 0:
@@ -591,7 +597,7 @@ elif page == "📋 B. 介面審查":
     st.title("📋 功能 B：介面審查 Checklist 自動生成")
 
     if not st.session_state.api_key:
-        st.warning("⚠️ 請先在左側輸入 Google API Key")
+        st.warning("⚠️ 請先設定 Google API Key（Secrets 或左側輸入框）")
         st.stop()
 
     ls = st.session_state.lesson_store
@@ -673,7 +679,7 @@ elif page == "🎙️ C. 訪談萃取":
     st.title("🎙️ 功能 C：退休訪談知識萃取")
 
     if not st.session_state.api_key:
-        st.warning("⚠️ 請先在左側輸入 Google API Key")
+        st.warning("⚠️ 請先設定 Google API Key（Secrets 或左側輸入框）")
         st.stop()
 
     c1, c2 = st.columns(2)
